@@ -1,8 +1,84 @@
 ---
 title: "Data Visualization"
-author: "Joschka Schwarz"
+author: "Kayenat Farheen"
 ---
 
 ::: callout-note
-You can delete everything in here and start fresh.
+
 :::
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggrepel)
+library(maps)
+```
+
+```{r}
+#Task1
+covid_data_tbl <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv")
+glimpse(covid_data_tbl)
+covid_data=covid_data_tbl %>% 
+  select(date,location,total_cases) %>%
+  filter(location %in% c("Europe","Germany","United Kingdom","France","Spain","United States")) %>%
+  mutate(cases_format=scales::dollar(total_cases, big.mark = ".", decimal.mark = ",", prefix = "", suffix = "",))
+glimpse(covid_data)
+```
+
+```{r}
+#Task1 Plotting
+ggplot(covid_data, aes(date, total_cases, color = location)) +
+  geom_line(linewidth=0.5) +
+ 
+  theme(legend.position = "bottom",axis.text.x = element_text(angle = 45, hjust = 1))+  geom_label_repel(
+    aes(x=date,y=total_cases,label =  cases_format,fill=location),
+     segmet.color="white",
+     color = "white",
+     fontface = "italic",data=covid_data)+guides(fill=FALSE)+ labs(
+       title = 'COVID-19 Confirmed cases worldwide',
+      subtitle = 'As of 19/04/2022',
+       x = "",
+       y = "Cumulative cases",
+        color = "Country") +  scale_y_continuous(labels = scales::dollar_format(scale = 1e-6,
+                                                                                prefix = "",
+                                                                                suffix = " M")) +
+  
+  scale_x_date(date_labels = "%B '%y",
+               date_breaks = "1 month",
+               expand = c(0, NA))
+```
+
+```{r}
+#02nd task
+covid_data_tbl2 <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv")
+glimpse(covid_data_tbl2)
+covid_data_tbl2 =covid_data_tbl2 %>% mutate(mortality_rate=total_deaths/population)%>%
+group_by(location)%>%
+summarise(last_mort_rate=last(mortality_rate))%>%
+  select(location,last_mort_rate)%>%
+  mutate(location = case_when(
+    
+    location == "United Kingdom" ~ "UK",
+    location == "United States" ~ "USA",
+    location == "Democratic Republic of Congo" ~ "Democratic Republic of the Congo",
+    TRUE ~ location
+    
+  )) %>%
+  distinct()
+covid_data_tbl2
+world <- map_data("world")
+covid_cases_map<-merge(x=world,y=covid_data_tbl2,by.x="region",by.y="location") %>% 
+  select(region,lat,long,last_mort_rate)
+```
+
+```{r}
+#Plotting the world map
+covid_cases_map %>% ggplot()+geom_map(aes(x=long,y=lat,fill=last_mort_rate,map_id=region),map=world)+
+  labs(title="Confirmed Covid-19 deaths relative to the size of the population",
+       subtitle = "Around 6.2 Million confirmed COVID-19 deaths worldwide",
+       caption="Date:22/05/2023",fill="Mortality Rate")+scale_fill_continuous(
+       labels=scales::percent_format(accuracy=0.01) ,
+       low="#FFCCCC",
+       high="#990000"
+       )
+```
+

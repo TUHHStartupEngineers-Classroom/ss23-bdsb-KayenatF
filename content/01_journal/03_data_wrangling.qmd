@@ -1,8 +1,119 @@
 ---
 title: "Data Wrangling"
-author: "Joschka Schwarz"
+author: "Kayenat Farheen"
 ---
 
 ::: callout-note
-You can delete everything in here and start fresh.
+
 :::
+
+```{r}
+library(data.table)
+library(tidyverse)
+library(vroom)
+library(dplyr)
+```
+
+```{r}
+assignee_col_types <- list(
+  id=col_character(),
+  organization=col_character(),
+  type=col_character()
+)
+
+assignee_data <- vroom(
+  file       = "assignee.tsv", 
+  delim      = "\t", 
+  col_types  = assignee_col_types,
+  na         = c("", "NA", "NULL"))
+
+patent_assignee_col_types<-list(
+  patent_id=col_character(),
+  assignee_id=col_character()
+)
+patent_assignee_data=vroom(
+  file       = "patent_assignee.tsv", 
+  delim      = "\t", 
+  col_types  = patent_assignee_col_types,
+  na         = c("", "NA", "NULL"))
+  
+  
+  
+patent_col_type<-list(
+  id=col_character(),
+  date=col_date("%Y-%m-%d"),
+  num_claims=col_double()
+  
+)
+
+patent_data=vroom(
+  file       = "patent.tsv", 
+  delim      = "\t", 
+  col_types  = patent_col_type,
+  na         = c("", "NA", "NULL"))
+
+
+uspc_col_type<-list(
+  patent_id=col_character(),
+  mainclass_id=col_character(),
+  sequence=col_double()
+  
+)
+uspc_data=vroom(
+  file       = "uspc.tsv", 
+  delim      = "\t", 
+  col_types  = uspc_col_type,
+  na         = c("", "NA", "NULL"))
+
+
+
+
+
+```
+
+```{r}
+typeof(patent_data)
+#Converting to data tables
+setDT(assignee_data)
+setDT(patent_assignee_data)
+setDT(patent_data)
+setDT(uspc_data)
+```
+
+```{r}
+#Question1-Reduced Data
+# If they had different colnames use by.x="colA", by.y="colB"
+
+merge_func <-merge(x=patent_assignee_data,y=assignee_data, by.x="assignee_id",by.y="id")
+merge_func[!is.na(patent_id)]
+merge_func[!is.na(organization)]
+merge_func[type==2][,.(count=.N),by=organization][order(-count)][1:10]
+```
+
+```{r}
+#Question2
+merge_func2 <-merge(x=patent_assignee_data,y=patent_data, by.x="patent_id",by.y="id")[
+  assignee_data, on = c(assignee_id = "id")]
+merge_func2[!is.na(id)]
+merge_func2[!is.na(organization)]
+merge_func2[type==2,][,month:=month(ymd(date))][month==8,][,.(count=.N),by=organization][order(-count)][1:10][]
+```
+
+```{r}
+#Question3-Part1
+merge_func3 <-merge(x=patent_assignee_data,y=assignee_data, by.x="assignee_id",by.y="id")
+merge_func3[!is.na(patent_id)]
+merge_func3[!is.na(organization)] 
+merge_func3[,.(count=.N),by=organization][order(-count)][1:10]
+list_worldwide=merge_func3
+```
+
+```{r}
+merge_func4 <- merge(x = patent_assignee_data, y = uspc_data, by = "patent_id")
+merge_func4 <- merge_func4[assignee_data, on = c(assignee_id = "id")]
+merge_func4 <- merge(merge_func4, list_worldwide, on = "organization")
+merge_func4 <- merge_func4[, .(count = .N), by = mainclass_id]
+merge_func4 <- merge_func4[order(-count)][1:5]
+merge_func4
+```
+
