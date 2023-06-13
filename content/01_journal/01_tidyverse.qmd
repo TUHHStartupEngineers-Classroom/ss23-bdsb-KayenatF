@@ -7,7 +7,7 @@ author: "Kayenat Farheen"
 
 :::
 
-This is the code for the first tidyverse challenge
+This is the code for the first tidyverse challenge, rendered again
 
 
 
