@@ -1,15 +1,15 @@
 ---
 title: "Tidyverse"
-author: "Joschka Schwarz"
+author: "Kayenat Farheen"
 ---
 
 ::: callout-note
-You can delete everything in here and start fresh.
+
 :::
 
-This is a `.qmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
+This is the code for the first tidyverse challenge, rendered again
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+
 
 # Text Formatting
 
@@ -25,55 +25,9 @@ superscript^2^ / subscript~2~
 
 # Headings
 
-## Header 2
-### Header 3
-#### Header 4
-##### Header 5
-###### Header 6
+
 
 # Links & Images
-
-<https://quarto.org>
-
-[Quarto](https://quarto.org)
-
-![Caption](../../assets/img/elephant.png)
-
-[![Caption](../../assets/img/elephant.png)](https://quarto.org)
-
-[![Caption](../../assets/img/elephant.png)](https://quarto.org "An elephant")
-
-
-# Lists
-
-* unordered list
-    + sub-item 1
-    + sub-item 2
-        - sub-sub-item 1
-        
-*   item 2
-
-    Continued (indent 4 spaces)
-    
-    
-1. ordered list
-2. item 2
-    i) sub-item 1
-         A.  sub-sub-item 1
-         
-(@)  A list whose numbering
-
-continues after
-
-(@)  an interruption
-
-# Tables
-
-| Right | Left | Default | Center |
-|------:|:-----|---------|:------:|
-|   12  |  12  |    12   |    12  |
-|  123  |  123 |   123   |   123  |
-|    1  |    1 |     1   |     1  |
 
 # Source Code
 
@@ -82,17 +36,51 @@ Use ``` to delimit blocks of source code:
 ```
 code
 ```
-
-Add a language to syntax highlight code blocks:
-
 ```{r}
-1 + 1
+
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(writexl)
 ```
 
 ```{r}
-cars
+# 2.0 Importing Files ----
+bike=read_excel("bikes.xlsx")
+bikeshops=read_excel("bikeshops.xlsx")
+orderlines=read_excel("orderlines.xlsx")
+
+```
+
+
+
+```{r}
+joined_grp3=left_join(orderlines,bikeshops,by=c("customer.id"="bikeshop.id"))
+joined_grp4=left_join(joined_grp3,bike,by=c("product.id"="bike.id"))
+joined_grp4=mutate(joined_grp4,total_price=price*quantity)
+glimpse(joined_grp4)
+joined_grp4=separate(joined_grp4,col="location",into=c("city","state"),",")
+glimpse(joined_grp4)
+joined_grp4=mutate(joined_grp4,year=year(order.date))
+joined_grp5=joined_grp4 %>% select(state,total_price,city,year)
+joined_grp5=group_by(joined_grp5,state)
+joined_grp5=summarise(joined_grp5,sales=sum(total_price))
+max_state=joined_grp5$state[which.max(joined_grp5$sales)]
+max_state
+
+```
+Plotting
+```{r}
+
+ggplot(joined_grp5,aes(state,sales))+geom_col(fill="pink") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+bike_orderlines_wrangled_tbl=joined_grp5
+joined_grp6=group_by(joined_grp4,year,state)
+joined_grp6=summarise(joined_grp6,sales=sum(total_price))
+ggplot(joined_grp6,aes(year,sales,fill=state))+geom_col()+facet_wrap(~ state) +theme(axis.text.x = element_text(angle = 45, hjust = 1))
+state_sales_wrangled=joined_grp6
 ```
 
 ```{r}
-plot(cars)
+
 ```
